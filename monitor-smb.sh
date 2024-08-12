@@ -1,17 +1,25 @@
 #!/bin/bash
 
 # Define the SMB server details, credentials, and mount options
-CONFIG_FILE="/Users/$USER/.smb-remount"
+CONFIG_FILE="$PWD/.smb-remount"
 
 # Function to remount the SMB share with the correct options
 remount_smb() {
+    # Create the mount point if it doesn't exist
+    if [ ! -d "$MOUNT_POINT" ]; then
+        mkdir -p "$MOUNT_POINT"
+    fi
+
     # Unmount the share if it's already mounted
     if mount | grep -q "$SMB_SERVER_MOUNT"; then
-        umount "$SMB_SERVER_MOUNT"
+        echo "Unmounting $SMB_SERVER_MOUNT"
+        UNMOUNT_PATH=$(df | grep "$SMB_SERVER_MOUNT" | awk '{print $9}')
+        # umount -v "$SMB_SERVER_MOUNT"
+        diskutil unmount "$UNMOUNT_PATH"
     fi
 
     # Remount the share with the correct options
-    mount -t smbfs -o "$MOUNT_OPTIONS" "$SMB_SERVER_MOUNT" "$MOUNT_POINT"
+    mount -t smbfs -o "$MOUNT_OPTIONS" "$SMB_SERVER" "$MOUNT_POINT"
 
     # Reopen the mount point in Finder to avoid disruption
     open "$MOUNT_POINT"

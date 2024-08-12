@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the SMB server details, credentials, and mount options
-CONFIG_FILE="/Users/$USER/.smb-remount"
+CONFIG_FILE=".smb-remount"
 
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
@@ -16,8 +16,11 @@ if [ ! -d "$MOUNT_POINT" ]; then
 fi
 
 # Unmount if already mounted (to remount with options)
-if mount | grep -q "$MOUNT_POINT"; then
-    umount "$MOUNT_POINT"
+if mount | grep -q "$SMB_SERVER_MOUNT"; then
+    echo "Unmounting $SMB_SERVER_MOUNT"
+    UNMOUNT_PATH=$(df | grep "$SMB_SERVER_MOUNT" | awk '{print $9}')
+    # umount -v "$SMB_SERVER_MOUNT"
+    diskutil unmount "$UNMOUNT_PATH"
 fi
 
 # Mount the SMB share with the specified options
@@ -30,6 +33,11 @@ else
     echo "Failed to mount SMB share"
     exit 1
 fi
+
+launchctl unload ~/Library/LaunchAgents/monitor-smb.plist
+MONITOR_SMB_PATH="$PWD"
+eval "echo \"$(cat monitor-smb.plist)\"" > ~/Library/LaunchAgents/monitor-smb.plist
+launchctl load ~/Library/LaunchAgents/monitor-smb.plist
 
 # Ensure the mount point is visible in Finder Locations
 # This step uses the `open` command to open the mounted directory in Finder,
