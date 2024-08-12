@@ -1,12 +1,7 @@
 #!/bin/bash
 
 # Define the SMB server details, credentials, and mount options
-SMB_USERNAME=""
-SMB_PASSWORD=""
-SMB_SERVER="//${SMB_USERNAME}:${SMB_PASSWORD}@example.com/MEDIA"
-SMB_SERVER_MOUNT="//${SMB_USERNAME}@example.com/MEDIA"
-MOUNT_POINT="/Users/$USER/mounts.noindex/MEDIA"
-MOUNT_OPTIONS="nodatacache,noatime"
+CONFIG_FILE="/Users/$USER/.smb-remount"
 
 # Function to remount the SMB share with the correct options
 remount_smb() {
@@ -16,11 +11,20 @@ remount_smb() {
     fi
 
     # Remount the share with the correct options
-    mount -t smbfs -o "$MOUNT_OPTIONS" "$SMB_SERVER" "$MOUNT_POINT"
+    mount -t smbfs -o "$MOUNT_OPTIONS" "$SMB_SERVER_MOUNT" "$MOUNT_POINT"
+
+    # Reopen the mount point in Finder to avoid disruption
+    open "$MOUNT_POINT"
 }
 
 # Monitor the mount point
 while true; do
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+    else
+        echo "Configuration file not found: $CONFIG_FILE"
+    fi
+
     # Check if the mount point is mounted with the correct options
     if mount | grep -q "$SMB_SERVER_MOUNT"; then
         MOUNT_INFO=$(mount | grep "$SMB_SERVER_MOUNT")
