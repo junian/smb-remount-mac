@@ -44,5 +44,12 @@ launchctl load ~/Library/LaunchAgents/monitor-smb.plist
 # which should trigger Finder to add it to the Locations toolbar.
 open "$MOUNT_POINT"
 
+# AppleScript to add the SMB share to the Finder sidebar under Locations
+osascript <<EOF
+tell application "Finder"
+    tell application "System Events" to tell process "Finder" to keystroke "t" using {command down, control down} --puts folder in sidebar, at the bottom
+end tell
+EOF
+
 # Instructions for the user to pin the mount in Locations
 echo "Please pin the mount to the Locations toolbar in Finder by dragging it from the sidebar."
