@@ -1,0 +1,6 @@
+SMB_USERNAME=""
+SMB_PASSWORD=""
+SMB_SERVER="//${SMB_USERNAME}:${SMB_PASSWORD}@example.com/petaplay"
+SMB_SERVER_MOUNT="//${SMB_USERNAME}@example.com/petaplay"
+MOUNT_POINT="/Users/$USER/mounts.noindex/petaplay"
+MOUNT_OPTIONS="nodatacache,noatime"
