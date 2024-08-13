@@ -45,10 +45,17 @@ else
     exit 1
 fi
 
-launchctl unload ~/Library/LaunchAgents/monitor-smb.plist
+SMB_LAUNCH_AGENT_PATH="$HOME/Library/LaunchAgents/monitor-smb.plist"
+
+if [ -f "$SMB_LAUNCH_AGENT_PATH" ]
+then
+    launchctl unload "$SMB_LAUNCH_AGENT_PATH"
+fi
+
 export MONITOR_SMB_PATH="$CURRENT_DIR"
-eval "echo \"$(cat monitor-smb.plist)\"" > ~/Library/LaunchAgents/monitor-smb.plist
-launchctl load ~/Library/LaunchAgents/monitor-smb.plist
+eval "echo \"$(cat monitor-smb.plist)\"" > "$SMB_LAUNCH_AGENT_PATH"
+
+launchctl load "$SMB_LAUNCH_AGENT_PATH"
 
 # Ensure the mount point is visible in Finder Locations
 # This step uses the `open` command to open the mounted directory in Finder,
