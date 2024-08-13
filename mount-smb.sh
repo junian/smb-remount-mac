@@ -1,10 +1,14 @@
 #!/bin/bash
 
+CURRENT_DIR="$(pwd)"
+
 # Define the SMB server details, credentials, and mount options
-CONFIG_FILE=".smb-remount"
+CONFIG_FILE="$CURRENT_DIR/.smb-remount"
 
 if [ -f "$CONFIG_FILE" ]; then
+    set -a
     source "$CONFIG_FILE"
+    set +a
 else
     echo "Configuration file not found: $CONFIG_FILE"
     exit 1
@@ -35,7 +39,7 @@ else
 fi
 
 launchctl unload ~/Library/LaunchAgents/monitor-smb.plist
-MONITOR_SMB_PATH="$PWD"
+export MONITOR_SMB_PATH="$CURRENT_DIR"
 eval "echo \"$(cat monitor-smb.plist)\"" > ~/Library/LaunchAgents/monitor-smb.plist
 launchctl load ~/Library/LaunchAgents/monitor-smb.plist
 
