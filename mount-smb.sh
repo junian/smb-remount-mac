@@ -5,14 +5,21 @@ CURRENT_DIR="$(pwd)"
 # Define the SMB server details, credentials, and mount options
 CONFIG_FILE="$CURRENT_DIR/.smb-remount"
 
-if [ -f "$CONFIG_FILE" ]; then
-    set -a
-    source "$CONFIG_FILE"
-    set +a
-else
-    echo "Configuration file not found: $CONFIG_FILE"
-    exit 1
-fi
+function currentTime() {
+    date +'%H:%M:%S'
+}
+
+function loadConfig() {
+    if [ -f "$CONFIG_FILE" ]; then
+        set -a
+        source "$CONFIG_FILE"
+        set +a
+    else
+        echo "[$(currentTime) WRN] Configuration file not found: $CONFIG_FILE"
+    fi
+}
+
+loadConfig
 
 # Create the mount point if it doesn't exist
 if [ ! -d "$MOUNT_POINT" ]; then
@@ -21,7 +28,7 @@ fi
 
 # Unmount if already mounted (to remount with options)
 if mount | grep -q "$SMB_SERVER_MOUNT"; then
-    echo "Unmounting $SMB_SERVER_MOUNT"
+    echo "[$(currentTime) INF] Unmounting $SMB_SERVER_MOUNT"
     UNMOUNT_PATH=$(df | grep "$SMB_SERVER_MOUNT" | awk '{print $9}')
     # umount -v "$SMB_SERVER_MOUNT"
     diskutil unmount "$UNMOUNT_PATH"
@@ -32,9 +39,9 @@ mount -t smbfs -o "$MOUNT_OPTIONS" "$SMB_SERVER" "$MOUNT_POINT"
 
 # Check if the mount was successful
 if mount | grep -q "$MOUNT_POINT"; then
-    echo "SMB share mounted successfully at $MOUNT_POINT with options: $MOUNT_OPTIONS"
+    echo "[$(currentTime) INF] SMB share mounted successfully at $MOUNT_POINT with options: $MOUNT_OPTIONS"
 else
-    echo "Failed to mount SMB share"
+    echo "[$(currentTime) ERR] Failed to mount SMB share"
     exit 1
 fi
 
@@ -56,4 +63,4 @@ end tell
 EOF
 
 # Instructions for the user to pin the mount in Locations
-echo "Please pin the mount to the Locations toolbar in Finder by dragging it from the sidebar."
+echo "[$(currentTime) INF] Please pin the mount to the Locations toolbar in Finder by dragging it from the sidebar."

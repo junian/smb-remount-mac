@@ -5,6 +5,20 @@ CURRENT_DIR="$(pwd)"
 # Define the SMB server details, credentials, and mount options
 CONFIG_FILE="$CURRENT_DIR/.smb-remount"
 
+function currentTime() {
+    date +'%H:%M:%S'
+}
+
+function loadConfig() {
+    if [ -f "$CONFIG_FILE" ]; then
+        set -a
+        source "$CONFIG_FILE"
+        set +a
+    else
+        echo "[$(currentTime) WRN] Configuration file not found: $CONFIG_FILE"
+    fi
+}
+
 # Function to remount the SMB share with the correct options
 remount_smb() {
     # Create the mount point if it doesn't exist
@@ -14,7 +28,7 @@ remount_smb() {
 
     # Unmount the share if it's already mounted
     if mount | grep -q "$SMB_SERVER_MOUNT"; then
-        echo "Unmounting $SMB_SERVER_MOUNT"
+        echo "[$(currentTime) INF] Unmounting $SMB_SERVER_MOUNT"
         UNMOUNT_PATH=$(df | grep "$SMB_SERVER_MOUNT" | awk '{print $9}')
         # umount -v "$SMB_SERVER_MOUNT"
         diskutil unmount "$UNMOUNT_PATH"
@@ -29,17 +43,13 @@ remount_smb() {
 
 # Monitor the mount point
 while true; do
-    if [ -f "$CONFIG_FILE" ]; then
-        source "$CONFIG_FILE"
-    else
-        echo "Configuration file not found: $CONFIG_FILE"
-    fi
+    loadConfig
 
     # Check if the mount point is mounted with the correct options
     if mount | grep -q "$SMB_SERVER_MOUNT"; then
         MOUNT_INFO=$(mount | grep "$SMB_SERVER_MOUNT")
         if [[ "$MOUNT_INFO" != *"$MOUNT_POINT"* ]]; then
-            echo "Mount options missing, remounting..."
+            echo "[$(currentTime) INF] Mount options missing, remounting..."
             remount_smb
         fi
     fi
