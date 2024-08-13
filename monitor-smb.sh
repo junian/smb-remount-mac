@@ -1,7 +1,9 @@
 #!/bin/bash
 
+CURRENT_DIR="$(pwd)"
+
 # Define the SMB server details, credentials, and mount options
-CONFIG_FILE="$PWD/.smb-remount"
+CONFIG_FILE="$CURRENT_DIR/.smb-remount"
 
 # Function to remount the SMB share with the correct options
 remount_smb() {
