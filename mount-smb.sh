@@ -45,7 +45,11 @@ else
     exit 1
 fi
 
-SMB_LAUNCH_AGENT_PATH="$HOME/Library/LaunchAgents/monitor-smb.plist"
+LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+
+mkdir -p "$LAUNCH_AGENTS_DIR"
+
+SMB_LAUNCH_AGENT_PATH="$LAUNCH_AGENTS_DIR/monitor-smb.plist"
 
 if [ -f "$SMB_LAUNCH_AGENT_PATH" ]
 then
