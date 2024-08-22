@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./mount-smb.sh -d
+./smb-remount -d

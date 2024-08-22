@@ -3,15 +3,18 @@
 # Constants
 readonly SMB_APP_VERSION=1.0.4
 readonly SMB_APP_NAME="smb-remount"
-readonly SMB_OLD_NAME="monitor-smb.plist"
 
 CURRENT_DIR="$(pwd)"
 readonly CURRENT_DIR
 
 readonly CONFIG_FILE="$CURRENT_DIR/.smb-remount"
+
 readonly LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
-readonly SMB_PLIST_FILE="monitor-smb.plist"
+readonly SMB_PLIST_FILE="smb-remount.plist"
 readonly SMB_LAUNCH_AGENT_PATH="$LAUNCH_AGENTS_DIR/$SMB_PLIST_FILE"
+
+readonly OLD_SMB_PLIST_FILE="monitor-smb.plist"
+readonly OLD_SMB_LAUNCH_AGENT_PATH="$LAUNCH_AGENTS_DIR/$OLD_SMB_PLIST_FILE"
 
 # Variables Init
 SMB_HOST=""
@@ -86,20 +89,27 @@ function installLaunchAgent() {
     echolog "Finished installing Launch Agent"
 }
 
-function uninstallLaunchAgent() {
+function uninstallAllLaunchAgents() {
     echolog "Uninstalling existing Launch Agent ..."
 
-    if [ -f "$SMB_LAUNCH_AGENT_PATH" ]
-    then
-        launchctl unload "$SMB_LAUNCH_AGENT_PATH"
-        if command -v trash >/dev/null 2>&1; then
-            trash "$SMB_LAUNCH_AGENT_PATH"
-        else
-            rm "$SMB_LAUNCH_AGENT_PATH"
-        fi
-    fi
+    uninstallLaunchAgent "$OLD_SMB_LAUNCH_AGENT_PATH"
+    uninstallLaunchAgent "$SMB_LAUNCH_AGENT_PATH"
 
     echolog "Finished uninstall Launch Agent"
+}
+
+function uninstallLaunchAgent() {
+    ARG_LAUNCH_AGENT_PATH="$1"
+
+    if [ -f "$ARG_LAUNCH_AGENT_PATH" ]
+    then
+        launchctl unload "$ARG_LAUNCH_AGENT_PATH"
+        if command -v trash >/dev/null 2>&1; then
+            trash "$ARG_LAUNCH_AGENT_PATH"
+        else
+            rm "$ARG_LAUNCH_AGENT_PATH"
+        fi
+    fi
 }
 
 function mountSMB() {
@@ -196,7 +206,7 @@ function main() {
         echolog "FLAG_SMB_MOUNT"
         mountSMB
         checkMount
-        uninstallLaunchAgent
+        uninstallAllLaunchAgents
         installLaunchAgent
         openMountLocation
         bookmarkMountLocation
@@ -205,7 +215,7 @@ function main() {
 
     if ((FLAG_SMB_UNINSTALL_LAUNCH_AGENT > 0)); then
         echolog "FLAG_SMB_UNINSTALL_LAUNCH_AGENT"
-        uninstallLaunchAgent
+        uninstallAllLaunchAgents
         exit 0;
     fi
 
