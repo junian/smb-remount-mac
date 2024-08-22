@@ -65,7 +65,7 @@ function loadConfig() {
         source "$CONFIG_FILE"
         set +a
 
-        SMB_SERVER_MOUNT="$SMB_HOST:$SMB_PORT/$SMB_PATH"
+        SMB_SERVER_MOUNT="$SMB_HOST:$SMB_PORT$SMB_PATH"
         SMB_SERVER="//$SMB_USERNAME:$SMB_PASSWORD@$SMB_SERVER_MOUNT"
     else
         echoerr "Configuration file not found: $CONFIG_FILE"
@@ -113,25 +113,36 @@ function uninstallLaunchAgent() {
 }
 
 function mountSMB() {
+    # Unmount if already mounted (to remount with options)
+    echolog "Checking mount: '$SMB_SERVER_MOUNT' with username: '$SMB_USERNAME'"
+    if mount | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME"; then
+        echolog "Unmounting \"$SMB_SERVER_MOUNT\""
+        SMB_UNMOUNT_PATH=$(df | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME" | awk '{print $9}')
+        diskutil unmount "$SMB_UNMOUNT_PATH"
+    fi
+
     # Create the mount point if it doesn't exist
     if [ ! -d "$SMB_MOUNT_POINT" ]; then
         mkdir -p "$SMB_MOUNT_POINT"
-    fi
-
-    # Unmount if already mounted (to remount with options)
-    if mount | grep -q "@$SMB_SERVER_MOUNT" | grep -q "//$SMB_USERNAME"; then
-        echolog "Unmounting \"@$SMB_SERVER_MOUNT\""
-        SMB_UNMOUNT_PATH=$(df | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME" | awk '{print $9}')
-        diskutil unmount "$SMB_UNMOUNT_PATH"
     fi
 
     # Mount the SMB share with the specified options
     mount -t smbfs -o "$SMB_MOUNT_OPTIONS" "$SMB_SERVER" "$SMB_MOUNT_POINT"
 }
 
+function checkMountAndOpen() {
+    # Check if the mount was successful
+    if mount | grep "$SMB_MOUNT_POINT"; then
+        echolog "SMB share mounted successfully at $SMB_MOUNT_POINT with options: $SMB_MOUNT_OPTIONS"
+        openMountLocation
+    else
+        echoerr "Failed to mount SMB share"
+    fi
+}
+
 function checkMount() {
     # Check if the mount was successful
-    if mount | grep -q "$SMB_MOUNT_POINT"; then
+    if mount | grep "$SMB_MOUNT_POINT"; then
         echolog "SMB share mounted successfully at $SMB_MOUNT_POINT with options: $SMB_MOUNT_OPTIONS"
     else
         echoerr "Failed to mount SMB share"
@@ -188,11 +199,12 @@ function smbMonitorDaemon() {
         loadConfig
 
         # Check if the mount point is mounted with the correct options
-        if mount | grep -q "$SMB_SERVER_MOUNT"; then
+        if mount | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME"; then
             MOUNT_INFO=$(mount | grep "$SMB_SERVER_MOUNT")
             if [[ "$MOUNT_INFO" != *"$SMB_MOUNT_POINT"* ]]; then
                 echolog "Mount options missing, remounting..."
                 mountSMB
+                checkMountAndOpen
             fi
         fi
         sleep 1  # Check every 1 second
@@ -221,7 +233,7 @@ function main() {
 
     if ((FLAG_SMB_DAEMON > 0)); then
         echolog "FLAG_SMB_DAEMON"
-        
+        smbMonitorDaemon
         exit 0;
     fi
 
