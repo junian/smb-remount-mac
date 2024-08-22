@@ -3,20 +3,27 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>monitor_smb</string>
+    <string>local.smb-remount</string>
+
     <key>WorkingDirectory</key>
-    <string>${MONITOR_SMB_PATH}</string>
+    <string>${SMB_PLIST_APP_PATH}</string>
+    
     <key>ProgramArguments</key>
     <array>
-        <string>${MONITOR_SMB_PATH}/monitor-smb.sh</string>
+        <string>${SMB_PLIST_APP_PATH}/${SMB_PLIST_APP_NAME}</string>
+        <string>-d</string>
     </array>
+    
     <key>RunAtLoad</key>
     <true/>
+    
     <key>KeepAlive</key>
     <true/>
-    <key>StandardErrorPath</key>
-    <string>/tmp/monitor-smb.stderr</string>
+    
     <key>StandardOutPath</key>
-    <string>/tmp/monitor-smb.stdout</string>
+    <string>/tmp/${SMB_PLIST_APP_NAME}.stdout</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/tmp/${SMB_PLIST_APP_NAME}.stderr</string>
 </dict>
 </plist>
