@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Constants
-readonly SMB_APP_VERSION=1.0.4
+readonly SMB_APP_VERSION=1.1.0
 readonly SMB_APP_NAME="smb-remount"
 
 CURRENT_DIR="$(pwd)"
