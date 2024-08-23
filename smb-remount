@@ -16,7 +16,7 @@ readonly SMB_LAUNCH_AGENT_PATH="$LAUNCH_AGENTS_DIR/$SMB_PLIST_FILE"
 readonly OLD_SMB_PLIST_FILE="monitor-smb.plist"
 readonly OLD_SMB_LAUNCH_AGENT_PATH="$LAUNCH_AGENTS_DIR/$OLD_SMB_PLIST_FILE"
 
-# Variables Init
+# Variables Init, real values coming from .smb-remount file
 SMB_HOST=""
 SMB_PORT=""
 SMB_PATH=""
@@ -24,6 +24,8 @@ SMB_USERNAME=""
 SMB_PASSWORD=""
 SMB_MOUNT_POINT=""
 SMB_MOUNT_OPTIONS=""
+
+# Variables Init, will be filled after reading config
 SMB_SERVER_MOUNT=""
 SMB_SERVER=""
 
@@ -75,6 +77,9 @@ function loadConfig() {
 function installLaunchAgent() {
     echolog "Installing Launch Agent ..."
 
+    # rm "/tmp/$SMB_APP_NAME.stdout"
+    # rm "/tmp/$SMB_APP_NAME.stderr"
+
     # Create Launch Agent dir if it doesn't exist
     if [ ! -d "$LAUNCH_AGENTS_DIR" ]; then
         mkdir -p "$LAUNCH_AGENTS_DIR"
@@ -115,9 +120,9 @@ function uninstallLaunchAgent() {
 function mountSMB() {
     # Unmount if already mounted (to remount with options)
     echolog "Checking mount: '$SMB_SERVER_MOUNT' with username: '$SMB_USERNAME'"
-    if mount | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME"; then
+    if mount | grep -q -e "@$SMB_SERVER_MOUNT" -e "//$SMB_USERNAME"; then
         echolog "Unmounting \"$SMB_SERVER_MOUNT\""
-        SMB_UNMOUNT_PATH=$(df | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME" | awk '{print $9}')
+        SMB_UNMOUNT_PATH=$(df | grep -e "@$SMB_SERVER_MOUNT" -e "//$SMB_USERNAME" | awk '{print $9}')
         diskutil unmount "$SMB_UNMOUNT_PATH"
     fi
 
@@ -132,7 +137,7 @@ function mountSMB() {
 
 function checkMountAndOpen() {
     # Check if the mount was successful
-    if mount | grep "$SMB_MOUNT_POINT"; then
+    if mount | grep -q "$SMB_MOUNT_POINT"; then
         echolog "SMB share mounted successfully at $SMB_MOUNT_POINT with options: $SMB_MOUNT_OPTIONS"
         openMountLocation
     else
@@ -140,9 +145,9 @@ function checkMountAndOpen() {
     fi
 }
 
-function checkMount() {
+function checkMountAndExit() {
     # Check if the mount was successful
-    if mount | grep "$SMB_MOUNT_POINT"; then
+    if mount | grep -q "$SMB_MOUNT_POINT"; then
         echolog "SMB share mounted successfully at $SMB_MOUNT_POINT with options: $SMB_MOUNT_OPTIONS"
     else
         echoerr "Failed to mount SMB share"
@@ -157,12 +162,21 @@ function openMountLocation() {
     open "$SMB_MOUNT_POINT"
 }
 
+function killFinder() {
+    osascript <<EOF
+    tell application "Finder"
+        quit
+    end tell
+EOF
+
+}
+
 function bookmarkMountLocation() {
     # AppleScript to add the SMB share to the Finder sidebar under Locations
     osascript <<EOF
-tell application "Finder"
-    tell application "System Events" to tell process "Finder" to keystroke "t" using {command down, control down} --puts folder in sidebar, at the bottom
-end tell
+    tell application "Finder"
+        tell application "System Events" to tell process "Finder" to keystroke "t" using {command down, control down} --puts folder in sidebar, at the bottom
+    end tell
 EOF
 
     # Instructions for the user to pin the mount in Locations
@@ -199,7 +213,7 @@ function smbMonitorDaemon() {
         loadConfig
 
         # Check if the mount point is mounted with the correct options
-        if mount | grep "@$SMB_SERVER_MOUNT" | grep "//$SMB_USERNAME"; then
+        if mount | grep -q -e "@$SMB_SERVER_MOUNT" -e "//$SMB_USERNAME"; then
             MOUNT_INFO=$(mount | grep "$SMB_SERVER_MOUNT")
             if [[ "$MOUNT_INFO" != *"$SMB_MOUNT_POINT"* ]]; then
                 echolog "Mount options missing, remounting..."
@@ -216,8 +230,9 @@ function main() {
 
     if ((FLAG_SMB_MOUNT > 0)); then
         echolog "FLAG_SMB_MOUNT"
+        # killFinder
         mountSMB
-        checkMount
+        checkMountAndExit
         uninstallAllLaunchAgents
         installLaunchAgent
         openMountLocation
